@@ -305,9 +305,15 @@
             position: absolute;
             right: 20px;
             top: 20px;
-            font-size: 20px;
+            font-size: 24px; /* Made slightly larger for easier selection */
             cursor: pointer;
             color: #666;
+            z-index: 99; /* Higher z-index to ensure it remains on top of any relative content */
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #000000;
         }
 
         .form-grid {
@@ -357,6 +363,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
 
+        /* Background Wave (Kept strictly behind on z-index: 1) */
         .card-wave {
             position: absolute;
             bottom: -15px;
@@ -365,17 +372,19 @@
             height: 80px;
             background: radial-gradient(circle, rgba(62, 166, 214, 0.18) 0%, transparent 70%);
             border-radius: 50%;
-            z-index: 1;
+            z-index: 1; /* Sits behind z-index: 2 */
             transform: rotate(-10deg);
             pointer-events: none;
         }
 
+        /* Styled headers as relative elements with z-index: 2 to sit on top of the wave */
         .card-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             height: 48px;
-            z-index: 2;
+            position: relative; /* Respects z-index over absolute sibling */
+            z-index: 2; 
         }
 
         .card-logo {
@@ -423,9 +432,11 @@
             min-width: 38px;
         }
 
+        /* Styled status container as relative element with z-index: 2 to sit on top of the wave */
         .card-status-container {
             text-align: center;
             margin-top: -1px;
+            position: relative; /* Respects z-index over absolute sibling */
             z-index: 2;
         }
 
@@ -440,10 +451,12 @@
             background: #fff;
         }
 
+        /* Styled card-body as relative element with z-index: 2 to sit on top of the wave */
         .card-body {
             display: flex;
             margin-top: 4px;
             flex: 1;
+            position: relative; /* Respects z-index over absolute sibling */
             z-index: 2;
         }
 
@@ -454,15 +467,17 @@
             align-items: center;
         }
 
+        /* Standard photo frame updated with distinct, bold black border */
         .card-photo-frame {
             width: 66px;
             height: 80px;
-            border: 0.8px solid #666;
+            border: 1.5px solid #000000; 
             background-color: #f5f5f5;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-sizing: border-box;
         }
 
         .card-photo-frame img {
@@ -472,18 +487,24 @@
             object-position: center;
         }
 
+        /* Signature frame updated with Solid White background */
         .card-sig-frame {
             margin-top: 3px;
             width: 66px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            background-color: #ffffff; 
+            padding: 2px;
+            box-sizing: border-box;
+            border-radius: 3px;
         }
 
         .card-sig-frame img {
             height: 16px;
             max-width: 62px;
             object-fit: contain;
+            display: block;
         }
 
         .card-sig-line {
@@ -504,16 +525,17 @@
             padding-left: 8px;
         }
 
+        /* Improved Visibility and Contrast for Student Name Banner */
         .card-name-banner {
             background-color: var(--sky-blue);
-            color: var(--dark-blue);
-            font-size: 9.5px;
-            font-weight: bold;
+            color: #000000; /* Deep black text */
+            font-size: 11px; /* Slightly larger */
+            font-weight: 900; /* Maximum bold visibility weight */
             text-align: center;
-            padding: 2.5px 0;
+            padding: 3px 0; /* Expanded padding for prominence */
             margin-bottom: 5px;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.3px;
         }
 
         .card-info-grid {
@@ -705,12 +727,35 @@
             }
 
             .card-status-pill { font-size: 6.5pt !important; padding: 0.2mm 3mm !important; }
-            .card-photo-frame { width: 18mm !important; height: 22mm !important; }
-            .card-sig-frame { width: 18mm !important; margin-top: 1mm !important; }
-            .card-sig-frame img { height: 4.5mm !important; }
+            
+            /* Bold black borders applied to A4 print targets */
+            .card-photo-frame { 
+                width: 18mm !important; 
+                height: 22mm !important; 
+                border: 0.5mm solid #000000 !important;
+            }
+            
+            .card-sig-frame { 
+                width: 18mm !important; 
+                margin-top: 1mm !important; 
+                background-color: #ffffff !important;
+            }
+            
+            .card-sig-frame img { 
+                height: 4.5mm !important; 
+            }
+
             .card-left { width: 20mm !important; }
             .card-right { padding-left: 2.5mm !important; }
-            .card-name-banner { font-size: 8pt !important; padding: 0.6mm 0 !important; margin-bottom: 1.2mm !important; }
+            
+            /* Printed output bold visibility adjustments */
+            .card-name-banner { 
+                font-size: 9pt !important; 
+                font-weight: 900 !important; 
+                color: #000000 !important;
+                padding: 0.8mm 0 !important; 
+                margin-bottom: 1.2mm !important; 
+            }
             .card-info-grid { font-size: 6.5pt !important; row-gap: 0.8mm !important; grid-template-columns: 18mm 2mm 1fr !important;}
 
             /* Back Card Adjustments */
@@ -1252,6 +1297,62 @@
             saveLocalBackup();
             closeModal('student-modal');
             renderTable();
+        }
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // Safely assign input values to avoid JavaScript runtime ReferenceError blockages
+    function setInputValue(id, value) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = value || '';
+        }
+    }
+
+    // Defensive and completely stable Edit Student Function
+    function editStudent(id) {
+        try {
+            const student = studentsData.find(s => s.id === id);
+            if (!student) return;
+
+            setInputValue('student-id', student.id);
+            setInputValue('std-name', student.name);
+            setInputValue('std-status', student.status || 'Non-Resident');
+            setInputValue('std-blood', student.bloodGroup);
+            setInputValue('std-parent', student.parentName);
+            setInputValue('std-hall', student.hallName);
+            setInputValue('std-class', student.studentClass);
+            setInputValue('std-session', student.session);
+            setInputValue('std-cardno', student.cardNo);
+            setInputValue('std-phone', student.phone);
+            setInputValue('std-district', student.district);
+            
+            const photoPreview = document.getElementById('std-photo-preview');
+            if (photoPreview) {
+                if (student.photo) {
+                    photoPreview.src = student.photo;
+                    photoPreview.style.display = 'block';
+                    setInputValue('std-photo-base64', student.photo);
+                } else {
+                    photoPreview.style.display = 'none';
+                    setInputValue('std-photo-base64', '');
+                }
+            }
+
+            const modalTitle = document.getElementById('modal-title');
+            if (modalTitle) modalTitle.textContent = 'Edit Student Information';
+            
+            const modal = document.getElementById('student-modal');
+            if (modal) modal.style.display = 'flex';
+        } catch (e) {
+            console.error("Error opening edit modal dynamically: ", e);
+            alert("An error occurred while attempting to edit student: " + e.message);
         }
     }
 
