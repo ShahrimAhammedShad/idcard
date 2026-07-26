@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -741,10 +741,10 @@
         <p>Please enter password to access ID Card Portal</p>
         <form onsubmit="verifySecurityPassword(event)">
             <div class="lock-input-group">
-                <input type="password" id="security-password-input" placeholder="পাসওয়ার্ড লিখুন..." required autocomplete="off">
+                <input type="password" id="security-password-input" placeholder="Enter password..." required autocomplete="off">
                 <button type="submit" class="btn btn-sec" style="justify-content: center; width: 100%;">Verify & Enter</button>
             </div>
-            <div class="error-msg" id="login-error-msg">ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।</div>
+            <div class="error-msg" id="login-error-msg">Incorrect password! Please try again.</div>
         </form>
     </div>
 </div>
@@ -780,7 +780,7 @@
             <!-- Real-Time Search Bar -->
             <div class="search-wrapper">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="search-input" placeholder="নাম, হলের নাম, কার্ড নং বা ফোন নং দিয়ে খুঁজুন..." oninput="handleSearch()">
+                <input type="text" id="search-input" placeholder="Search by Name, Hall Name, Card No or Phone Number..." oninput="handleSearch()">
             </div>
         </div>
         
@@ -914,9 +914,9 @@
 <!-- ================= JAVASCRIPT LOGIC ================= -->
 <script>
     // -------------------------------------------------------------
-    // Security Passcode (পাসওয়ার্ড পরিবর্তন করতে নিচের মানটি এডিট করুন)
+    // Security Passcode (Edit this variable to change portal password)
     // -------------------------------------------------------------
-    const PORTAL_PASSWORD = "admin752002";
+    const PORTAL_PASSWORD = "admin";
 
     // Firebase Configuration
     const firebaseConfig = {
@@ -974,7 +974,7 @@
 
     // Portal Logout Function
     function logoutSecurity() {
-        if (confirm('আপনি কি আইডি কার্ড পোর্টাল থেকে লগআউট করতে চান?')) {
+        if (confirm('Are you sure you want to log out of the ID Card Portal?')) {
             sessionStorage.removeItem('iu_portal_auth');
             document.getElementById('security-password-input').value = '';
             document.getElementById('login-error-msg').style.display = 'none';
@@ -1070,20 +1070,7 @@
         localStorage.setItem('local_students', JSON.stringify(studentsData));
     }
 
-    function closeModal(id) {
-        document.getElementById(id).style.display = 'none';
-    }
-
-    function openManualModal() {
-        document.getElementById('student-form').reset();
-        document.getElementById('student-id').value = '';
-        document.getElementById('std-photo-preview').style.display = 'none';
-        document.getElementById('std-photo-base64').value = '';
-        document.getElementById('modal-title').textContent = 'Add Student Information';
-        document.getElementById('student-modal').style.display = 'flex';
-    }
-
-    // Load from Firestore
+    // Load from Firestore with Robust Error Catching to notify sync failures
     function loadStudents() {
         if (!db) {
             loadLocalBackup();
@@ -1116,6 +1103,8 @@
             renderTable();
         }).catch(err => {
             console.error("Firestore read error, using local backup", err);
+            // Helpfully alerts users when deploying on GitHub if Rules are expired
+            alert("Failed to read Firebase database! (Security rules might be locked or expired). Loading local backup instead. Error: " + err.message);
             loadLocalBackup();
         });
     }
@@ -1138,7 +1127,7 @@
         tbody.innerHTML = '';
 
         if (dataToRender.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#999; padding:30px;">কোনো শিক্ষার্থীর ডাটা পাওয়া যায়নি। ডাটা যোগ করুন বা এক্সেল আপলোড করুন।</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#999; padding:30px;">No student records found. Add student manually or upload an Excel template.</td></tr>`;
             return;
         }
 
@@ -1148,7 +1137,7 @@
             
             const isIncomplete = missingInfo || !hasPhoto;
             const statusBadge = isIncomplete 
-                ? `<span class="status-badge status-incomplete">Incomplete (Edit)</span>` 
+                ? `<span class="status-badge status-incomplete">Incomplete</span>` 
                 : `<span class="status-badge status-complete">Complete</span>`;
 
             const checkedAttr = selectedStudentIds.includes(student.id) ? 'checked' : '';
@@ -1188,7 +1177,32 @@
         }
     }
 
-    // Save student (Insert or Update)
+    // Defensive Modal Open to completely prevent execution halts
+    function openManualModal() {
+        try {
+            const form = document.getElementById('student-form');
+            if (form) form.reset();
+            
+            const stdId = document.getElementById('student-id');
+            if (stdId) stdId.value = '';
+            
+            const photoPreview = document.getElementById('std-photo-preview');
+            if (photoPreview) photoPreview.style.display = 'none';
+            
+            const photoBase64 = document.getElementById('std-photo-base64');
+            if (photoBase64) photoBase64.value = '';
+            
+            const modalTitle = document.getElementById('modal-title');
+            if (modalTitle) modalTitle.textContent = 'Add Student Information';
+        } catch (e) {
+            console.error("Error resetting manual student form: ", e);
+        }
+        
+        const modal = document.getElementById('student-modal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    // Save student (Insert or Update with Strict Error Catching)
     function saveStudent(e) {
         e.preventDefault();
         const id = document.getElementById('student-id').value;
@@ -1211,11 +1225,17 @@
                 db.collection("students").doc(id).update(student).then(() => {
                     closeModal('student-modal');
                     loadStudents();
+                }).catch(err => {
+                    console.error("Firestore Update Error: ", err);
+                    alert("Failed to update student data on Firebase! Security permissions denied or network connection error. Error: " + err.message);
                 });
             } else {
                 db.collection("students").add(student).then(() => {
                     closeModal('student-modal');
                     loadStudents();
+                }).catch(err => {
+                    console.error("Firestore Add Error: ", err);
+                    alert("Failed to add student to Firebase! Error: " + err.message);
                 });
             }
         } else {
@@ -1235,41 +1255,15 @@
         }
     }
 
-    function editStudent(id) {
-        const student = studentsData.find(s => s.id === id);
-        if (!student) return;
-
-        document.getElementById('student-id').value = student.id;
-        document.getElementById('std-name').value = student.name || '';
-        document.getElementById('std-status').value = student.status || 'Non-Resident';
-        document.getElementById('std-blood').value = student.bloodGroup || '';
-        document.getElementById('std-parent').value = student.parentName || '';
-        document.getElementById('std-hall').value = student.hallName || '';
-        document.getElementById('std-class').value = student.studentClass || '';
-        document.getElementById('std-session').value = student.session || '';
-        document.getElementById('std-cardno').value = student.cardNo || '';
-        document.getElementById('std-phone').value = student.phone || '';
-        document.getElementById('std-district').value = student.district || '';
-        
-        const photoPreview = document.getElementById('std-photo-preview');
-        if (student.photo) {
-            photoPreview.src = student.photo;
-            photoPreview.style.display = 'block';
-            document.getElementById('std-photo-base64').value = student.photo;
-        } else {
-            photoPreview.style.display = 'none';
-            document.getElementById('std-photo-base64').value = '';
-        }
-
-        document.getElementById('modal-title').textContent = 'Edit Student Information';
-        document.getElementById('student-modal').style.display = 'flex';
-    }
-
+    // Delete single student with exact Firebase Catch Handler
     function deleteSingleStudent(id) {
-        if (!confirm('আপনি কি এই শিক্ষার্থীর রেকর্ডটি মুছে ফেলতে চান?')) return;
+        if (!confirm("Are you sure you want to delete this student's record?")) return;
         if (db) {
             db.collection("students").doc(id).delete().then(() => {
                 loadStudents();
+            }).catch(err => {
+                console.error("Firestore Delete Error: ", err);
+                alert("Failed to delete record from Firebase! (Security permissions denied or network connection error). Error: " + err.message);
             });
         } else {
             studentsData = studentsData.filter(s => s.id !== id);
@@ -1280,7 +1274,7 @@
 
     function deleteSelected() {
         if (selectedStudentIds.length === 0) return;
-        if (!confirm(`আপনি কি নির্বাচিত ${selectedStudentIds.length} জন শিক্ষার্থীর রেকর্ড মুছে ফেলতে চান?`)) return;
+        if (!confirm(`Are you sure you want to delete the selected ${selectedStudentIds.length} student records?`)) return;
 
         if (db) {
             const batch = db.batch();
@@ -1291,6 +1285,9 @@
             batch.commit().then(() => {
                 selectedStudentIds = [];
                 loadStudents();
+            }).catch(err => {
+                console.error("Firestore Batch Delete Error: ", err);
+                alert("Failed to batch delete records from Firebase! Error: " + err.message);
             });
         } else {
             studentsData = studentsData.filter(s => !selectedStudentIds.includes(s.id));
@@ -1322,6 +1319,26 @@
         updateControlsState();
     }
 
+    // Dynamic UI State Handler for Printing & Batch Deleting
+    function updateControlsState() {
+        try {
+            const printBtn = document.getElementById('btn-print-selected');
+            if (printBtn) {
+                printBtn.textContent = `Print Selected (${selectedStudentIds.length})`;
+            }
+            const delBtn = document.getElementById('btn-delete-selected');
+            if (delBtn) {
+                if (selectedStudentIds.length > 0) {
+                    delBtn.style.display = 'inline-flex';
+                } else {
+                    delBtn.style.display = 'none';
+                }
+            }
+        } catch(e) {
+            console.error("Error updating batch controls UI state: ", e);
+        }
+    }
+
     // ---------------- EXCEL DOWNLOAD & UPLOAD ----------------
 
     function downloadSampleTemplate() {
@@ -1348,7 +1365,7 @@
             const json = XLSX.utils.sheet_to_json(sheet);
 
             if (json.length === 0) {
-                alert('এক্সেল ফাইলে কোনো ডাটা পাওয়া যায়নি!');
+                alert("No student data found in the selected Excel file!");
                 return;
             }
 
@@ -1379,12 +1396,15 @@
 
             if (db) {
                 Promise.all(uploadPromises).then(() => {
-                    alert('সফলভাবে সমস্ত ডাটা আপলোড হয়েছে। এখন ছবি এড করার জন্য Edit অপশনটি ব্যবহার করুন।');
+                    alert("Bulk upload completed successfully! Now use the 'Edit' action to upload individual photos.");
                     loadStudents();
+                }).catch(err => {
+                    console.error("Bulk Upload Firebase Error: ", err);
+                    alert("Failed to upload Excel records to Firebase! Error: " + err.message);
                 });
             } else {
                 saveLocalBackup();
-                alert('সফলভাবে সমস্ত ডাটা লোকাল ডাটাবেজে আপলোড হয়েছে। এখন ছবি এড করার জন্য Edit অপশনটি ব্যবহার করুন।');
+                alert("Excel records uploaded successfully to local storage! Now use the 'Edit' action to upload individual photos.");
                 renderTable();
             }
         };
@@ -1489,7 +1509,7 @@
 
     function printSelectedCards() {
         if (selectedStudentIds.length === 0) {
-            alert('অনুগ্রহ করে প্রিন্ট করার জন্য ন্যূনতম ১ জন শিক্ষার্থী সিলেক্ট করুন।');
+            alert("Please select at least 1 student to print.");
             return;
         }
 
