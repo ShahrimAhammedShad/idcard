@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Islamic University ID Card Portal</title>
+    
+    <!-- External Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-green: #0b8a43;
+            --sky-blue: #3ea6d6;
+            --dark-blue: #0b3d60;
+            --bg-color: #f3f4f6;
+            --card-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Forces colors to be printed properly in modern browsers */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Lock Screen Styling */
+        #lock-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+        }
+
+        .lock-card {
+            background: #fff;
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .lock-logo {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+            margin-bottom: 15px;
+        }
+
+        .lock-card h2 {
+            margin: 0 0 5px 0;
+            font-size: 20px;
+            color: var(--dark-blue);
+        }
+
+        .lock-card p {
+            margin: 0 0 25px 0;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .lock-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: left;
+        }
+
+        .lock-input-group input {
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .lock-input-group input:focus {
+            border-color: var(--primary-green);
+        }
+
+        .error-msg {
+            color: #d32f2f;
+            font-size: 12.5px;
+            margin-top: 5px;
+            display: none;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* Standard Header and Panel Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+            color: var(--primary-green);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: var(--primary-green);
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-sec {
+            background-color: var(--dark-blue);
+        }
+
+        .btn-danger {
+            background-color: #d32f2f;
+        }
+
+        .control-panel {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Search Section Styling */
+        .table-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-wrapper {
+            display: flex;
+            align-items: center;
+            background: #f3f4f6;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 6px 14px;
+            width: 320px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .search-wrapper i {
+            color: #888;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+
+        .search-wrapper input {
+            border: none;
+            background: transparent;
+            outline: none;
+            width: 100%;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .table-container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f9fafb;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .student-thumb {
+            width: 40px;
+            height: 48px;
+            border-radius: 4px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            background-color: #f0f0f0;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .status-complete {
+            background-color: #e6f4ea;
+            color: #137333;
+        }
+
+        .status-incomplete {
+            background-color: #fce8e6;
+            color: #c5221f;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 550px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .form-group-full {
+            grid-column: span 2;
+        }
+
+        .form-control {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-control label {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #555;
+        }
+
+        .form-control input, .form-control select {
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        /* Front Card Styling */
+        .id-card {
+            width: 324px;
+            height: 204px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background: #fff;
+            position: relative;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .card-wave {
+            position: absolute;
+            bottom: -15px;
+            left: -15px;
+            width: 160px;
+            height: 80px;
+            background: radial-gradient(circle, rgba(62, 166, 214, 0.18) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: 1;
+            transform: rotate(-10deg);
+            pointer-events: none;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 48px;
+            z-index: 2;
+        }
+
+        .card-logo {
+            width: 42px;
+            height: 44px;
+            object-fit: contain;
+        }
+
+        .card-header-text {
+            flex: 1;
+            text-align: center;
+            padding: 0 5px;
+        }
+
+        .card-header-text h2 {
+            font-size: 11px;
+            font-weight: 850;
+            margin: 0;
+            color: #000;
+            letter-spacing: 0.1px;
+        }
+
+        .card-header-text h3 {
+            font-size: 8px;
+            font-weight: 700;
+            margin: 1px 0 0 0;
+            color: var(--primary-green);
+        }
+
+        .card-header-text h4 {
+            font-size: 7.5px;
+            font-weight: 700;
+            margin: 1px 0 0 0;
+            color: #444;
+            letter-spacing: 0.3px;
+        }
+
+        /* Minimalist Bracket-style Blood Group text */
+        .card-blood-text {
+            font-size: 11px;
+            font-weight: bold;
+            color: #d32f2f;
+            text-align: right;
+            z-index: 2;
+            min-width: 38px;
+        }
+
+        .card-status-container {
+            text-align: center;
+            margin-top: -1px;
+            z-index: 2;
+        }
+
+        .card-status-pill {
+            display: inline-block;
+            border: 0.8px solid #555;
+            border-radius: 8px;
+            padding: 0.5px 12px;
+            font-size: 8px;
+            font-weight: bold;
+            color: #222;
+            background: #fff;
+        }
+
+        .card-body {
+            display: flex;
+            margin-top: 4px;
+            flex: 1;
+            z-index: 2;
+        }
+
+        .card-left {
+            width: 75px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card-photo-frame {
+            width: 66px;
+            height: 80px;
+            border: 0.8px solid #666;
+            background-color: #f5f5f5;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .card-sig-frame {
+            margin-top: 3px;
+            width: 66px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card-sig-frame img {
+            height: 16px;
+            max-width: 62px;
+            object-fit: contain;
+        }
+
+        .card-sig-line {
+            width: 100%;
+            height: 0.8px;
+            background-color: #444;
+            margin-top: 1px;
+        }
+
+        .card-sig-text {
+            font-size: 5.5px;
+            font-weight: bold;
+            margin-top: 1px;
+        }
+
+        .card-right {
+            flex: 1;
+            padding-left: 8px;
+        }
+
+        .card-name-banner {
+            background-color: var(--sky-blue);
+            color: var(--dark-blue);
+            font-size: 9.5px;
+            font-weight: bold;
+            text-align: center;
+            padding: 2.5px 0;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+
+        .card-info-grid {
+            display: grid;
+            grid-template-columns: 58px 6px 1fr;
+            row-gap: 3.5px; 
+            font-size: 7.5px;
+            font-weight: 500;
+            color: #000;
+        }
+
+        .info-lbl {
+            font-weight: bold;
+        }
+
+        /* Back Card Styling */
+        .id-card-back {
+            width: 324px;
+            height: 204px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background: #fff;
+            position: relative;
+            box-sizing: border-box;
+            padding: 12px 15px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .back-top {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 6px;
+        }
+
+        .back-top-logo {
+            width: 25px;
+            height: 25px;
+            object-fit: contain;
+        }
+
+        .back-top-text {
+            flex: 1;
+            padding-left: 8px;
+            font-size: 8px;
+            font-weight: bold;
+            color: var(--dark-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+        }
+
+        .back-mid {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 0;
+        }
+
+        .property-text {
+            font-size: 8.5px;
+            color: #222;
+            text-align: center;
+            line-height: 1.4;
+            font-weight: 600;
+        }
+
+        .back-bottom {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            border-top: 1px solid #eee;
+            padding-top: 6px;
+        }
+
+        .back-instructions {
+            font-size: 6px;
+            color: #555;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+
+        .back-instructions li {
+            position: relative;
+            padding-left: 8px;
+        }
+
+        .back-instructions li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--primary-green);
+        }
+
+        /* Larger QR wrapper in screen preview */
+        .qr-wrapper {
+            width: 70px; 
+            height: 70px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 2px;
+        }
+
+        .qr-canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .global-settings-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            margin-top: 20px;
+        }
+
+        .global-settings-box summary {
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--dark-blue);
+        }
+
+        #print-layout {
+            display: none;
+        }
+
+        /* PRINT MEDIA LAYOUT */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #print-layout, #print-layout * {
+                visibility: visible;
+            }
+
+            #print-layout {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 210mm; 
+                box-sizing: border-box;
+                background: #fff;
+                padding-top: 10mm;
+            }
+
+            .print-pair-container {
+                display: flex;
+                justify-content: center;
+                gap: 12mm;
+                margin-bottom: 12mm;
+                page-break-inside: avoid;
+            }
+
+            .id-card, .id-card-back {
+                width: 85.6mm !important;
+                height: 54mm !important;
+                border: 1px solid #111 !important;
+                border-radius: 3mm !important;
+                box-shadow: none !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+            }
+
+            /* Front Card Adjustments */
+            .id-card { padding: 2.5mm 3.2mm !important; }
+            .card-header { height: 11.5mm !important; }
+            .card-logo { width: 10mm !important; height: 10mm !important; }
+            .card-header-text h2 { font-size: 10pt !important; }
+            .card-header-text h3 { font-size: 7.2pt !important; }
+            .card-header-text h4 { font-size: 6.2pt !important; }
+            
+            /* Print style for blood bracket text */
+            .card-blood-text { 
+                font-size: 8.5pt !important; 
+                font-weight: bold !important;
+                color: #d32f2f !important;
+            }
+
+            .card-status-pill { font-size: 6.5pt !important; padding: 0.2mm 3mm !important; }
+            .card-photo-frame { width: 18mm !important; height: 22mm !important; }
+            .card-sig-frame { width: 18mm !important; margin-top: 1mm !important; }
+            .card-sig-frame img { height: 4.5mm !important; }
+            .card-left { width: 20mm !important; }
+            .card-right { padding-left: 2.5mm !important; }
+            .card-name-banner { font-size: 8pt !important; padding: 0.6mm 0 !important; margin-bottom: 1.2mm !important; }
+            .card-info-grid { font-size: 6.5pt !important; row-gap: 0.8mm !important; grid-template-columns: 18mm 2mm 1fr !important;}
+
+            /* Back Card Adjustments */
+            .id-card-back { padding: 3mm 4mm !important; }
+            .back-top { padding-bottom: 1.5mm !important; }
+            .back-top-logo { width: 6.5mm !important; height: 6.5mm !important; }
+            .back-top-text { font-size: 7.5pt !important; padding-left: 2mm !important; }
+            .property-text { font-size: 7.8pt !important; line-height: 1.3 !important; }
+            .back-bottom { padding-top: 1.5mm !important; }
+            .back-instructions { font-size: 5.8pt !important; }
+            
+            /* Enlarged QR Code dimensions in printed output for optimal scan quality */
+            .qr-wrapper { 
+                width: 20mm !important; 
+                height: 20mm !important; 
+                padding: 0.5mm !important; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ================= SECURITY LOCK SCREEN ================= -->
+<div id="lock-screen">
+    <div class="lock-card">
+        <img class="lock-logo" id="lock-logo-preview" src="https://i.postimg.cc/mrhR3QfH/iu-logo.png" alt="IU Logo">
+        <h2>Security Verification</h2>
+        <p>Please enter password to access ID Card Portal</p>
+        <form onsubmit="verifySecurityPassword(event)">
+            <div class="lock-input-group">
+                <input type="password" id="security-password-input" placeholder="পাসওয়ার্ড লিখুন..." required autocomplete="off">
+                <button type="submit" class="btn btn-sec" style="justify-content: center; width: 100%;">Verify & Enter</button>
+            </div>
+            <div class="error-msg" id="login-error-msg">ভুল পাসওয়ার্ড! আবার চেষ্টা করুন।</div>
+        </form>
+    </div>
+</div>
+
+<div class="container" id="screen-layout">
+    <header>
+        <h1><i class="fa-solid fa-graduation-cap"></i> Islamic University ID Card Portal</h1>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn" onclick="openManualModal()"><i class="fa-solid fa-plus"></i> Add Student</button>
+            <!-- Logout Button -->
+            <button class="btn btn-danger" onclick="logoutSecurity()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+        </div>
+    </header>
+
+    <!-- Controls Panel -->
+    <div class="control-panel">
+        <button class="btn btn-sec" onclick="downloadSampleTemplate()"><i class="fa-solid fa-file-excel"></i> Download Sample Template</button>
+        
+        <div class="file-input-wrapper">
+            <button class="btn"><i class="fa-solid fa-upload"></i> Bulk Upload (Excel/CSV)</button>
+            <input type="file" id="bulk-upload-input" accept=".xlsx, .xls, .csv" onchange="handleBulkUpload(event)">
+        </div>
+
+        <button class="btn btn-sec" id="btn-print-selected" onclick="printSelectedCards()"><i class="fa-solid fa-print"></i> Print Selected (0)</button>
+        <button class="btn btn-danger" id="btn-delete-selected" onclick="deleteSelected()" style="display:none;"><i class="fa-solid fa-trash"></i> Delete Selected</button>
+    </div>
+
+    <!-- Student List Table -->
+    <div class="table-container">
+        <!-- Search and list header container -->
+        <div class="table-header-row">
+            <h3 style="margin:0;">Registered Student Records</h3>
+            <!-- Real-Time Search Bar -->
+            <div class="search-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-input" placeholder="নাম, হলের নাম, কার্ড নং বা ফোন নং দিয়ে খুঁজুন..." oninput="handleSearch()">
+            </div>
+        </div>
+        
+        <table id="student-table">
+            <thead>
+                <tr>
+                    <th width="40"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"></th>
+                    <th>Photo</th>
+                    <th>Student Name</th>
+                    <th>Parent's Name</th>
+                    <th>Hall Name</th>
+                    <th>Card No.</th>
+                    <th>Session</th>
+                    <th>Status</th>
+                    <th width="200">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="student-list-tbody">
+                <!-- Dynamic Content Load -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- System Logo & Signature Settings Box -->
+    <details class="global-settings-box">
+        <summary><i class="fa-solid fa-sliders"></i> Global Settings (University Logo & Chairman Signature)</summary>
+        <div style="margin-top:15px; display:flex; flex-wrap:wrap; gap:30px;">
+            
+            <!-- Global Logo Uploader -->
+            <div style="display:flex; align-items:center; gap:15px; border-right: 1px solid #ddd; padding-right: 30px;">
+                <img id="current-global-logo" src="https://i.postimg.cc/mrhR3QfH/iu-logo.png" style="height: 60px; border: 1px solid #ddd; padding: 4px; border-radius: 4px;" alt="Logo">
+                <div class="form-control">
+                    <label>Update Global Logo</label>
+                    <input type="file" accept="image/*" onchange="updateGlobalLogo(this)">
+                </div>
+            </div>
+
+            <!-- Global Chairman Signature Uploader -->
+            <div style="display:flex; align-items:center; gap:15px;">
+                <img id="current-global-sig" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='30' viewBox='0 0 100 30'><path d='M10,22 Q30,5 50,22 T90,10' fill='none' stroke='%230b3d60' stroke-width='2'/></svg>" style="height: 40px; width:100px; object-fit: contain; border: 1px solid #ddd; padding: 4px; border-radius: 4px;" alt="Signature">
+                <div class="form-control">
+                    <label>Update Chairman Signature (Global)</label>
+                    <input type="file" accept="image/*" onchange="updateGlobalSignature(this)">
+                </div>
+            </div>
+
+        </div>
+    </details>
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- Student Input/Edit Modal -->
+<div class="modal" id="student-modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('student-modal')">&times;</span>
+        <h3 id="modal-title">Add Student Information</h3>
+        <form id="student-form" onsubmit="saveStudent(event)">
+            <input type="hidden" id="student-id">
+            <div class="form-grid">
+                <div class="form-control form-group-full">
+                    <label>Student Name</label>
+                    <input type="text" id="std-name" required>
+                </div>
+                <div class="form-control">
+                    <label>Resident Status</label>
+                    <select id="std-status">
+                        <option value="Non-Resident">Non-Resident</option>
+                        <option value="Resident">Resident</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label>Blood Group</label>
+                    <input type="text" id="std-blood" placeholder="e.g. AB+">
+                </div>
+                <div class="form-control form-group-full">
+                    <label>Parent's Name</label>
+                    <input type="text" id="std-parent" required>
+                </div>
+                <div class="form-control">
+                    <label>Hall Name</label>
+                    <input type="text" id="std-hall" required>
+                </div>
+                <div class="form-control">
+                    <label>Class</label>
+                    <input type="text" id="std-class" required>
+                </div>
+                <div class="form-control">
+                    <label>Session</label>
+                    <input type="text" id="std-session" placeholder="e.g. 2022-23" required>
+                </div>
+                <div class="form-control">
+                    <label>Card No.</label>
+                    <input type="text" id="std-cardno" required>
+                </div>
+                <div class="form-control">
+                    <label>Phone Number</label>
+                    <input type="text" id="std-phone" placeholder="e.g. 01712345678" required>
+                </div>
+                <div class="form-control">
+                    <label>District</label>
+                    <input type="text" id="std-district" placeholder="e.g. Kushtia" required>
+                </div>
+                <div class="form-control form-group-full">
+                    <label>Upload Photo</label>
+                    <input type="file" id="std-photo-input" accept="image/*" onchange="convertImageToBase64(this, 'std-photo-preview')">
+                    <input type="hidden" id="std-photo-base64">
+                    <img id="std-photo-preview" style="height: 60px; width: 50px; object-fit: cover; margin-top: 5px; display: none; border:1px solid #ccc;">
+                </div>
+            </div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button type="submit" class="btn">Save Information</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal" id="preview-modal">
+    <div class="modal-content" style="max-width: 730px;">
+        <span class="close-modal" onclick="closeModal('preview-modal')">&times;</span>
+        <h3>ID Card Live Preview</h3>
+        <div style="display: flex; gap: 20px; justify-content: center; margin-top: 20px; flex-wrap: wrap;" id="preview-cards-container">
+            <!-- Dynamically populated front and back cards -->
+        </div>
+    </div>
+</div>
+
+<div id="print-layout"></div>
+
+<!-- ================= JAVASCRIPT LOGIC ================= -->
+<script>
+    // -------------------------------------------------------------
+    // Security Passcode (পাসওয়ার্ড পরিবর্তন করতে নিচের মানটি এডিট করুন)
+    // -------------------------------------------------------------
+    const PORTAL_PASSWORD = "admin752002";
+
+    // Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyAK1976c6t_SP6BNWAOcnJoif5ihhFIsdQ",
+        authDomain: "idcarddept-e5898.firebaseapp.com",
+        projectId: "idcarddept-e5898",
+        storageBucket: "idcarddept-e5898.firebasestorage.app",
+        messagingSenderId: "460360960767",
+        appId: "1:460360960767:web:3b5b87e81a03fda7cb1aca"
+    };
+
+    let studentsData = [];
+    let db = null;
+    let selectedStudentIds = [];
+    
+    // Fallback/Default Settings
+    let globalLogoUrl = "https://i.postimg.cc/mrhR3QfH/iu-logo.png"; 
+    let globalChairmanSig = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='30' viewBox='0 0 100 30'><path d='M10,22 Q30,5 50,22 T90,10' fill='none' stroke='%230b3d60' stroke-width='2'/></svg>";
+
+    window.onload = function() {
+        checkSecurityAuth();
+        initGlobalSettings();
+        initFirebase();
+    };
+
+    // Security Gate Verification Logic
+    function checkSecurityAuth() {
+        const isAuthorized = sessionStorage.getItem('iu_portal_auth');
+        if (isAuthorized === 'true') {
+            document.getElementById('lock-screen').style.display = 'none';
+        } else {
+            document.getElementById('lock-screen').style.display = 'flex';
+            // Sync current custom logo to lockscreen if available
+            const savedLogo = localStorage.getItem('global_iu_logo');
+            if (savedLogo) {
+                document.getElementById('lock-logo-preview').src = savedLogo;
+            }
+        }
+    }
+
+    function verifySecurityPassword(e) {
+        e.preventDefault();
+        const userInput = document.getElementById('security-password-input').value;
+        const errorEl = document.getElementById('login-error-msg');
+        
+        if (userInput === PORTAL_PASSWORD) {
+            sessionStorage.setItem('iu_portal_auth', 'true');
+            document.getElementById('lock-screen').style.display = 'none';
+            errorEl.style.display = 'none';
+        } else {
+            errorEl.style.display = 'block';
+            document.getElementById('security-password-input').value = '';
+        }
+    }
+
+    // Portal Logout Function
+    function logoutSecurity() {
+        if (confirm('আপনি কি আইডি কার্ড পোর্টাল থেকে লগআউট করতে চান?')) {
+            sessionStorage.removeItem('iu_portal_auth');
+            document.getElementById('security-password-input').value = '';
+            document.getElementById('login-error-msg').style.display = 'none';
+            checkSecurityAuth();
+        }
+    }
+
+    function initGlobalSettings() {
+        const savedLogo = localStorage.getItem('global_iu_logo');
+        if (savedLogo) {
+            globalLogoUrl = savedLogo;
+            document.getElementById('current-global-logo').src = savedLogo;
+        }
+        
+        const savedSig = localStorage.getItem('global_chairman_sig');
+        if (savedSig) {
+            globalChairmanSig = savedSig;
+            document.getElementById('current-global-sig').src = savedSig;
+        }
+    }
+
+    function updateGlobalLogo(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                globalLogoUrl = e.target.result;
+                localStorage.setItem('global_iu_logo', globalLogoUrl);
+                document.getElementById('current-global-logo').src = globalLogoUrl;
+                document.getElementById('lock-logo-preview').src = globalLogoUrl;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Global Signature Update (Chairman Signature)
+    function updateGlobalSignature(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                globalChairmanSig = e.target.result;
+                localStorage.setItem('global_chairman_sig', globalChairmanSig);
+                document.getElementById('current-global-sig').src = globalChairmanSig;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function initFirebase() {
+        if (firebaseConfig.apiKey) {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.firestore();
+                console.log("Firebase initialized successfully with project ID: " + firebaseConfig.projectId);
+                loadStudents();
+            } catch(e) {
+                console.error("Error initializing Firebase. Falling back to local Storage.", e);
+                loadLocalBackup();
+            }
+        } else {
+            console.warn("Operating in LocalStorage fallback mode.");
+            loadLocalBackup();
+        }
+    }
+
+    function loadLocalBackup() {
+        const localData = localStorage.getItem('local_students');
+        const rawData = localData ? JSON.parse(localData) : [];
+        
+        // Dynamic Mapping adapter (Ensures compatibility for old data models)
+        studentsData = rawData.map(student => {
+            if (!student.parentName) {
+                if (student.fatherName && student.motherName) {
+                    student.parentName = `${student.fatherName} & ${student.motherName}`;
+                } else if (student.fatherName) {
+                    student.parentName = student.fatherName;
+                } else {
+                    student.parentName = "";
+                }
+            }
+            if (!student.hallName && student.department) {
+                student.hallName = student.department;
+            }
+            if (!student.phone) student.phone = "";
+            if (!student.district) student.district = "";
+            return student;
+        });
+        renderTable();
+    }
+
+    function saveLocalBackup() {
+        localStorage.setItem('local_students', JSON.stringify(studentsData));
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    function openManualModal() {
+        document.getElementById('student-form').reset();
+        document.getElementById('student-id').value = '';
+        document.getElementById('std-photo-preview').style.display = 'none';
+        document.getElementById('std-photo-base64').value = '';
+        document.getElementById('modal-title').textContent = 'Add Student Information';
+        document.getElementById('student-modal').style.display = 'flex';
+    }
+
+    // Load from Firestore
+    function loadStudents() {
+        if (!db) {
+            loadLocalBackup();
+            return;
+        }
+        db.collection("students").get().then((querySnapshot) => {
+            studentsData = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                data.id = doc.id;
+                
+                // Dynamic Mapping adapter (Ensures compatibility for old data models in Firestore)
+                if (!data.parentName) {
+                    if (data.fatherName && data.motherName) {
+                        data.parentName = `${data.fatherName} & ${data.motherName}`;
+                    } else if (data.fatherName) {
+                        data.parentName = data.fatherName;
+                    } else {
+                        data.parentName = "";
+                    }
+                }
+                if (!data.hallName && data.department) {
+                    data.hallName = data.department;
+                }
+                if (!data.phone) data.phone = "";
+                if (!data.district) data.district = "";
+
+                studentsData.push(data);
+            });
+            renderTable();
+        }).catch(err => {
+            console.error("Firestore read error, using local backup", err);
+            loadLocalBackup();
+        });
+    }
+
+    // Modern Real-Time Search Handler (Search by Name, Hall, Card No, and Phone Number)
+    function handleSearch() {
+        const query = document.getElementById('search-input').value.toLowerCase().trim();
+        const filteredStudents = studentsData.filter(student => {
+            return (student.name && student.name.toLowerCase().includes(query)) ||
+                   (student.hallName && student.hallName.toLowerCase().includes(query)) ||
+                   (student.cardNo && student.cardNo.toLowerCase().includes(query)) ||
+                   (student.phone && student.phone.toLowerCase().includes(query)); 
+        });
+        renderTable(filteredStudents);
+    }
+
+    // Redraw Table UI (Supporting parameter-based data render for Search)
+    function renderTable(dataToRender = studentsData) {
+        const tbody = document.getElementById('student-list-tbody');
+        tbody.innerHTML = '';
+
+        if (dataToRender.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#999; padding:30px;">কোনো শিক্ষার্থীর ডাটা পাওয়া যায়নি। ডাটা যোগ করুন বা এক্সেল আপলোড করুন।</td></tr>`;
+            return;
+        }
+
+        dataToRender.forEach(student => {
+            const hasPhoto = !!student.photo;
+            const missingInfo = !student.name || !student.parentName || !student.hallName || !student.studentClass || !student.session || !student.cardNo || !student.phone || !student.district;
+            
+            const isIncomplete = missingInfo || !hasPhoto;
+            const statusBadge = isIncomplete 
+                ? `<span class="status-badge status-incomplete">Incomplete (Edit)</span>` 
+                : `<span class="status-badge status-complete">Complete</span>`;
+
+            const checkedAttr = selectedStudentIds.includes(student.id) ? 'checked' : '';
+            const photoSrc = student.photo || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100%' height='100%' fill='%23eee'/><circle cx='50' cy='40' r='18' fill='%23ccc'/><path d='M20,90 Q50,60 80,90' stroke='%23bbb' fill='none' stroke-width='4'/><circle cx='50' cy='40' r='18' fill='%23ccc'/></svg>";
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="checkbox" class="student-checkbox" data-id="${student.id}" ${checkedAttr} onchange="handleSelect(this)"></td>
+                <td><img class="student-thumb" src="${photoSrc}"></td>
+                <td style="font-weight:600;">${student.name || 'N/A'}</td>
+                <td>${student.parentName || 'N/A'}</td>
+                <td>${student.hallName || 'N/A'}</td>
+                <td>${student.cardNo || 'N/A'}</td>
+                <td>${student.session || 'N/A'}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sec" style="padding:5px 10px; font-size:12px;" onclick="previewStudent('${student.id}')"><i class="fa-solid fa-eye"></i> Preview</button>
+                    <button class="btn btn-sec" style="padding:5px 10px; font-size:12px; background-color: var(--primary-green);" onclick="editStudent('${student.id}')"><i class="fa-solid fa-edit"></i> Edit</button>
+                    <button class="btn btn-danger" style="padding:5px 10px; font-size:12px;" onclick="deleteSingleStudent('${student.id}')"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateControlsState();
+    }
+
+    function convertImageToBase64(input, previewId) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById(previewId);
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                document.getElementById('std-photo-base64').value = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Save student (Insert or Update)
+    function saveStudent(e) {
+        e.preventDefault();
+        const id = document.getElementById('student-id').value;
+        const student = {
+            name: document.getElementById('std-name').value.trim(),
+            status: document.getElementById('std-status').value,
+            bloodGroup: document.getElementById('std-blood').value.trim().toUpperCase(),
+            parentName: document.getElementById('std-parent').value.trim(),
+            hallName: document.getElementById('std-hall').value.trim(),
+            studentClass: document.getElementById('std-class').value.trim(),
+            session: document.getElementById('std-session').value.trim(),
+            cardNo: document.getElementById('std-cardno').value.trim(),
+            phone: document.getElementById('std-phone').value.trim(),
+            district: document.getElementById('std-district').value.trim(),
+            photo: document.getElementById('std-photo-base64').value
+        };
+
+        if (db) {
+            if (id) {
+                db.collection("students").doc(id).update(student).then(() => {
+                    closeModal('student-modal');
+                    loadStudents();
+                });
+            } else {
+                db.collection("students").add(student).then(() => {
+                    closeModal('student-modal');
+                    loadStudents();
+                });
+            }
+        } else {
+            if (id) {
+                const index = studentsData.findIndex(s => s.id === id);
+                if (index !== -1) {
+                    student.id = id;
+                    studentsData[index] = student;
+                }
+            } else {
+                student.id = 'local_' + Date.now();
+                studentsData.push(student);
+            }
+            saveLocalBackup();
+            closeModal('student-modal');
+            renderTable();
+        }
+    }
+
+    function editStudent(id) {
+        const student = studentsData.find(s => s.id === id);
+        if (!student) return;
+
+        document.getElementById('student-id').value = student.id;
+        document.getElementById('std-name').value = student.name || '';
+        document.getElementById('std-status').value = student.status || 'Non-Resident';
+        document.getElementById('std-blood').value = student.bloodGroup || '';
+        document.getElementById('std-parent').value = student.parentName || '';
+        document.getElementById('std-hall').value = student.hallName || '';
+        document.getElementById('std-class').value = student.studentClass || '';
+        document.getElementById('std-session').value = student.session || '';
+        document.getElementById('std-cardno').value = student.cardNo || '';
+        document.getElementById('std-phone').value = student.phone || '';
+        document.getElementById('std-district').value = student.district || '';
+        
+        const photoPreview = document.getElementById('std-photo-preview');
+        if (student.photo) {
+            photoPreview.src = student.photo;
+            photoPreview.style.display = 'block';
+            document.getElementById('std-photo-base64').value = student.photo;
+        } else {
+            photoPreview.style.display = 'none';
+            document.getElementById('std-photo-base64').value = '';
+        }
+
+        document.getElementById('modal-title').textContent = 'Edit Student Information';
+        document.getElementById('student-modal').style.display = 'flex';
+    }
+
+    function deleteSingleStudent(id) {
+        if (!confirm('আপনি কি এই শিক্ষার্থীর রেকর্ডটি মুছে ফেলতে চান?')) return;
+        if (db) {
+            db.collection("students").doc(id).delete().then(() => {
+                loadStudents();
+            });
+        } else {
+            studentsData = studentsData.filter(s => s.id !== id);
+            saveLocalBackup();
+            renderTable();
+        }
+    }
+
+    function deleteSelected() {
+        if (selectedStudentIds.length === 0) return;
+        if (!confirm(`আপনি কি নির্বাচিত ${selectedStudentIds.length} জন শিক্ষার্থীর রেকর্ড মুছে ফেলতে চান?`)) return;
+
+        if (db) {
+            const batch = db.batch();
+            selectedStudentIds.forEach(id => {
+                const ref = db.collection("students").doc(id);
+                batch.delete(ref);
+            });
+            batch.commit().then(() => {
+                selectedStudentIds = [];
+                loadStudents();
+            });
+        } else {
+            studentsData = studentsData.filter(s => !selectedStudentIds.includes(s.id));
+            selectedStudentIds = [];
+            saveLocalBackup();
+            renderTable();
+        }
+    }
+
+    function toggleSelectAll(master) {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        selectedStudentIds = [];
+        checkboxes.forEach(cb => {
+            cb.checked = master.checked;
+            if (master.checked) {
+                selectedStudentIds.push(cb.getAttribute('data-id'));
+            }
+        });
+        updateControlsState();
+    }
+
+    function handleSelect(cb) {
+        const id = cb.getAttribute('data-id');
+        if (cb.checked) {
+            if (!selectedStudentIds.includes(id)) selectedStudentIds.push(id);
+        } else {
+            selectedStudentIds = selectedStudentIds.filter(x => x !== id);
+        }
+        updateControlsState();
+    }
+
+    // ---------------- EXCEL DOWNLOAD & UPLOAD ----------------
+
+    function downloadSampleTemplate() {
+        const headers = [["Name", "Status", "Blood_Group", "Card_No", "Parent_Name", "Hall_Name", "Class", "Session", "Phone", "District"]];
+        const sampleRow = ["SHAHRIM AHAMMED SHAD", "Non-Resident", "AB+", "232", "Md Aktarujjaman", "Shahid Ziaur Rahman Hall", "LL.B", "2022-23", "01712345678", "Kushtia"];
+        headers.push(sampleRow);
+
+        const ws = XLSX.utils.aoa_to_sheet(headers);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "IU Student Data");
+        XLSX.writeFile(wb, "Islamic_University_ID_Sample.xlsx");
+    }
+
+    function handleBulkUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = e.target.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(sheet);
+
+            if (json.length === 0) {
+                alert('এক্সেল ফাইলে কোনো ডাটা পাওয়া যায়নি!');
+                return;
+            }
+
+            let uploadPromises = [];
+
+            json.forEach(row => {
+                const student = {
+                    name: row["Name"] ? String(row["Name"]).trim() : "",
+                    status: row["Status"] ? String(row["Status"]).trim() : "Non-Resident",
+                    bloodGroup: row["Blood_Group"] ? String(row["Blood_Group"]).trim().toUpperCase() : "",
+                    cardNo: row["Card_No"] ? String(row["Card_No"]).trim() : "",
+                    parentName: row["Parent_Name"] ? String(row["Parent_Name"]).trim() : "",
+                    hallName: row["Hall_Name"] ? String(row["Hall_Name"]).trim() : "",
+                    studentClass: row["Class"] ? String(row["Class"]).trim() : "",
+                    session: row["Session"] ? String(row["Session"]).trim() : "",
+                    phone: row["Phone"] ? String(row["Phone"]).trim() : "",
+                    district: row["District"] ? String(row["District"]).trim() : "",
+                    photo: "" 
+                };
+
+                if (db) {
+                    uploadPromises.push(db.collection("students").add(student));
+                } else {
+                    student.id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                    studentsData.push(student);
+                }
+            });
+
+            if (db) {
+                Promise.all(uploadPromises).then(() => {
+                    alert('সফলভাবে সমস্ত ডাটা আপলোড হয়েছে। এখন ছবি এড করার জন্য Edit অপশনটি ব্যবহার করুন।');
+                    loadStudents();
+                });
+            } else {
+                saveLocalBackup();
+                alert('সফলভাবে সমস্ত ডাটা লোকাল ডাটাবেজে আপলোড হয়েছে। এখন ছবি এড করার জন্য Edit অপশনটি ব্যবহার করুন।');
+                renderTable();
+            }
+        };
+        reader.readAsBinaryString(file);
+    }
+
+    // ---------------- PREVIEW & PRINT UTILS ----------------
+
+    // Optimized payload with only 3 key details to ensure massive high-speed scan scannability
+    function generateQRText(student) {
+        return `Phone: ${student.phone || 'N/A'}\nDistrict: ${student.district || 'N/A'}\nHall: ${student.hallName || 'N/A'}`;
+    }
+
+    function previewStudent(id) {
+        const student = studentsData.find(s => s.id === id);
+        if (!student) return;
+
+        const photoSrc = student.photo || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100%' height='100%' fill='%23eee'/><circle cx='50' cy='40' r='18' fill='%23ccc'/><path d='M20,90 Q50,60 80,90' stroke='%23bbb' fill='none' stroke-width='4'/></svg>";
+        const bloodTypeStr = student.bloodGroup ? `(${student.bloodGroup})` : '(N/A)';
+
+        const previewContainer = document.getElementById('preview-cards-container');
+        previewContainer.innerHTML = `
+            <!-- Front Part -->
+            <div class="id-card">
+                <div class="card-wave"></div>
+                <div class="card-header">
+                    <img class="card-logo" src="${globalLogoUrl}" alt="IU Logo">
+                    <div class="card-header-text">
+                        <h2>ISLAMIC UNIVERSITY</h2>
+                        <h3>AL-FIQH AND LAW</h3>
+                        <h4>IDENTITY CARD</h4>
+                    </div>
+                    <!-- Minimalist Bracket-style Blood Group text -->
+                    <div class="card-blood-text">
+                        ${bloodTypeStr}
+                    </div>
+                </div>
+
+                <div class="card-status-container">
+                    <span class="card-status-pill">${student.status || 'Non-Resident'}</span>
+                </div>
+
+                <div class="card-body">
+                    <div class="card-left">
+                        <div class="card-photo-frame">
+                            <img src="${photoSrc}" alt="Photo">
+                        </div>
+                        <div class="card-sig-frame">
+                            <img src="${globalChairmanSig}" alt="Chairman Signature">
+                            <div class="card-sig-line"></div>
+                            <span class="card-sig-text">Chairman Signature</span>
+                        </div>
+                    </div>
+                    <div class="card-right">
+                        <div class="card-name-banner">${student.name || 'N/A'}</div>
+                        <div class="card-info-grid">
+                            <span class="info-lbl">Parent's Name</span><span>:</span><span class="info-val">${student.parentName || 'N/A'}</span>
+                            <span class="info-lbl">Hall</span><span>:</span><span class="info-val">${student.hallName || 'N/A'}</span>
+                            <span class="info-lbl">Class</span><span>:</span><span class="info-val">${student.studentClass || 'N/A'}</span>
+                            <span class="info-lbl">Session</span><span>:</span><span class="info-val">${student.session || 'N/A'}</span>
+                            <span class="info-lbl">Card No.</span><span>:</span><span class="info-val">${student.cardNo || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Part -->
+            <div class="id-card-back">
+                <div class="back-top">
+                    <img class="back-top-logo" src="${globalLogoUrl}" alt="IU Logo">
+                    <div class="back-top-text">Islamic University, Bangladesh</div>
+                </div>
+                <div class="back-mid">
+                    <div class="property-text">
+                        This is the property of the Department of Al-Fiqh and Law. If found elsewhere, please return it to the department.
+                    </div>
+                </div>
+                <div class="back-bottom">
+                    <ul class="back-instructions">
+                        <li>This card is non-transferable.</li>
+                        <li>Any alteration voids this card.</li>
+                        <li>Validity: Course Completion.</li>
+                    </ul>
+                    <div class="qr-wrapper">
+                        <canvas id="preview-qr" class="qr-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Render high-res scannable QR code
+        const qrTextValue = generateQRText(student);
+        new QRious({
+            element: document.getElementById('preview-qr'),
+            value: qrTextValue,
+            size: 250, // Higher size value inside standard layout container ensures optimal scan performance
+            level: 'H'
+        });
+
+        document.getElementById('preview-modal').style.display = 'flex';
+    }
+
+    function printSelectedCards() {
+        if (selectedStudentIds.length === 0) {
+            alert('অনুগ্রহ করে প্রিন্ট করার জন্য ন্যূনতম ১ জন শিক্ষার্থী সিলেক্ট করুন।');
+            return;
+        }
+
+        const printLayoutContainer = document.getElementById('print-layout');
+        printLayoutContainer.innerHTML = ''; 
+
+        selectedStudentIds.forEach((id, index) => {
+            const student = studentsData.find(s => s.id === id);
+            if (!student) return;
+
+            const photoSrc = student.photo || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><rect width='100%' height='100%' fill='%23eee'/><circle cx='50' cy='40' r='18' fill='%23ccc'/><path d='M20,90 Q50,60 80,90' stroke='%23bbb' fill='none' stroke-width='4'/></svg>";
+            const bloodTypeStr = student.bloodGroup ? `(${student.bloodGroup})` : '(N/A)';
+            const qrCanvasId = `print-qr-${index}`;
+
+            const pairContainer = document.createElement('div');
+            pairContainer.className = 'print-pair-container';
+            pairContainer.innerHTML = `
+                <!-- Front Side -->
+                <div class="id-card">
+                    <div class="card-wave"></div>
+                    <div class="card-header">
+                        <img class="card-logo" src="${globalLogoUrl}" alt="IU Logo">
+                        <div class="card-header-text">
+                            <h2>ISLAMIC UNIVERSITY</h2>
+                            <h3>AL-FIQH AND LAW</h3>
+                            <h4>IDENTITY CARD</h4>
+                        </div>
+                        <!-- Minimalist Bracket-style Blood Group text -->
+                        <div class="card-blood-text">
+                            ${bloodTypeStr}
+                        </div>
+                    </div>
+
+                    <div class="card-status-container">
+                        <span class="card-status-pill">${student.status || 'Non-Resident'}</span>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="card-left">
+                            <div class="card-photo-frame">
+                                <img src="${photoSrc}" alt="Photo">
+                            </div>
+                            <div class="card-sig-frame">
+                                <img src="${globalChairmanSig}" alt="Chairman Signature">
+                                <div class="card-sig-line"></div>
+                                <span class="card-sig-text">Chairman Signature</span>
+                            </div>
+                        </div>
+                        <div class="card-right">
+                            <div class="card-name-banner">${student.name || 'N/A'}</div>
+                            <div class="card-info-grid">
+                                <span class="info-lbl">Parent's Name</span><span>:</span><span class="info-val">${student.parentName || 'N/A'}</span>
+                                <span class="info-lbl">Hall</span><span>:</span><span class="info-val">${student.hallName || 'N/A'}</span>
+                                <span class="info-lbl">Class</span><span>:</span><span class="info-val">${student.studentClass || 'N/A'}</span>
+                                <span class="info-lbl">Session</span><span>:</span><span class="info-val">${student.session || 'N/A'}</span>
+                                <span class="info-lbl">Card No.</span><span>:</span><span class="info-val">${student.cardNo || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Back Side -->
+                <div class="id-card-back">
+                    <div class="back-top">
+                        <img class="back-top-logo" src="${globalLogoUrl}" alt="IU Logo">
+                        <div class="back-top-text">Islamic University, Bangladesh</div>
+                    </div>
+                    <div class="back-mid">
+                        <div class="property-text">
+                            This is the property of the Department of Al-Fiqh and Law. If found elsewhere, please return it to the department.
+                        </div>
+                    </div>
+                    <div class="back-bottom">
+                        <ul class="back-instructions">
+                            <li>This card is non-transferable.</li>
+                            <li>Any alteration voids this card.</li>
+                            <li>Validity: Course Completion.</li>
+                        </ul>
+                        <div class="qr-wrapper">
+                            <canvas id="${qrCanvasId}" class="qr-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+            printLayoutContainer.appendChild(pairContainer);
+
+            // Render crisp, high-res QR code on A4 Print template
+            const qrTextValue = generateQRText(student);
+            new QRious({
+                element: document.getElementById(qrCanvasId),
+                value: qrTextValue,
+                size: 250, // Setting higher size renders sharp vectors to printed canvas output
+                level: 'H'
+            });
+        });
+
+        window.print();
+    }
+</script>
+
+</body>
+</html>
