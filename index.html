@@ -667,11 +667,10 @@
                 display: none !important;
             }
 
-            /* Display the print layout normally with solid white background */
+            /* Display the print layout normally */
             #print-layout {
                 display: block !important;
-                background: #ffffff !important;
-                background-color: #ffffff !important;
+                background: #fff;
                 margin: 0;
                 padding: 0;
                 width: 100%;
@@ -765,7 +764,7 @@
 <!-- ================= SECURITY LOCK SCREEN ================= -->
 <div id="lock-screen">
     <div class="lock-card">
-        <img class="lock-logo" id="lock-logo-preview" src="https://i.postimg.cc/mrhR3QfH/iu-logo.png" alt="IU Logo">
+        <img class="lock-logo" id="lock-logo-preview" src="https://upload.wikimedia.org/wikipedia/en/c/c3/Islamic_University_Bangladesh_logo.png" alt="IU Logo">
         <h2>Security Verification</h2>
         <p>Please enter password to access ID Card Portal</p>
         <form onsubmit="verifySecurityPassword(event)">
@@ -840,7 +839,7 @@
             
             <!-- Global Logo Uploader -->
             <div style="display:flex; align-items:center; gap:15px; border-right: 1px solid #ddd; padding-right: 30px;">
-                <img id="current-global-logo" src="https://i.postimg.cc/mrhR3QfH/iu-logo.png" style="height: 60px; border: 1px solid #ddd; padding: 4px; border-radius: 4px;" alt="Logo">
+                <img id="current-global-logo" src="https://upload.wikimedia.org/wikipedia/en/c/c3/Islamic_University_Bangladesh_logo.png" style="height: 60px; border: 1px solid #ddd; padding: 4px; border-radius: 4px;" alt="Logo">
                 <div class="form-control">
                     <label>Update Global Logo</label>
                     <input type="file" accept="image/*" onchange="updateGlobalLogo(this)">
@@ -961,8 +960,8 @@
     let db = null;
     let selectedStudentIds = [];
     
-    // Fallback/Default Settings
-    let globalLogoUrl = "https://i.postimg.cc/mrhR3QfH/iu-logo.png"; 
+    // Fallback/Default Settings (Updated with highly stable Wikimedia official IU Logo asset)
+    let globalLogoUrl = "https://upload.wikimedia.org/wikipedia/en/c/c3/Islamic_University_Bangladesh_logo.png"; 
     let globalChairmanSig = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='30' viewBox='0 0 100 30'><path d='M10,22 Q30,5 50,22 T90,10' fill='none' stroke='%230b3d60' stroke-width='2'/></svg>";
 
     window.onload = function() {
@@ -1058,6 +1057,10 @@
                     firebase.initializeApp(firebaseConfig);
                 }
                 db = firebase.firestore();
+                // Force long polling connection transport mode to bypass ISP network blocks on port hangs
+                db.settings({
+                    experimentalForceLongPolling: true
+                });
                 console.log("Firebase initialized successfully with project ID: " + firebaseConfig.projectId);
                 loadStudents();
             } catch(e) {
