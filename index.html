@@ -305,10 +305,10 @@
             position: absolute;
             right: 20px;
             top: 20px;
-            font-size: 24px; /* Made slightly larger for easier selection */
+            font-size: 24px;
             cursor: pointer;
             color: #666;
-            z-index: 99; /* Higher z-index to ensure it remains on top of any relative content */
+            z-index: 99;
             transition: color 0.2s;
         }
 
@@ -346,13 +346,13 @@
             outline: none;
         }
 
-        /* Front Card Styling */
+        /* Front Card Styling (CR80 Standard Dimensions: 3.375in x 2.125in) */
         .id-card {
-            width: 324px;
-            height: 204px;
+            width: 3.375in !important;
+            height: 2.125in !important;
             border: 1px solid #ccc;
             border-radius: 10px;
-            background: #fff;
+            background: #ffffff;
             position: relative;
             box-sizing: border-box;
             padding: 10px 12px;
@@ -363,27 +363,12 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
 
-        /* Background Wave (Kept strictly behind on z-index: 1) */
-        .card-wave {
-            position: absolute;
-            bottom: -15px;
-            left: -15px;
-            width: 160px;
-            height: 80px;
-            background: radial-gradient(circle, rgba(62, 166, 214, 0.18) 0%, transparent 70%);
-            border-radius: 50%;
-            z-index: 1; /* Sits behind z-index: 2 */
-            transform: rotate(-10deg);
-            pointer-events: none;
-        }
-
-        /* Styled headers as relative elements with z-index: 2 to sit on top of the wave */
         .card-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             height: 48px;
-            position: relative; /* Respects z-index over absolute sibling */
+            position: relative;
             z-index: 2; 
         }
 
@@ -432,11 +417,10 @@
             min-width: 38px;
         }
 
-        /* Styled status container as relative element with z-index: 2 to sit on top of the wave */
         .card-status-container {
             text-align: center;
             margin-top: -1px;
-            position: relative; /* Respects z-index over absolute sibling */
+            position: relative;
             z-index: 2;
         }
 
@@ -451,12 +435,11 @@
             background: #fff;
         }
 
-        /* Styled card-body as relative element with z-index: 2 to sit on top of the wave */
         .card-body {
             display: flex;
             margin-top: 4px;
             flex: 1;
-            position: relative; /* Respects z-index over absolute sibling */
+            position: relative;
             z-index: 2;
         }
 
@@ -541,8 +524,8 @@
         .card-info-grid {
             display: grid;
             grid-template-columns: 58px 6px 1fr;
-            row-gap: 3.5px; 
-            font-size: 7.5px;
+            row-gap: 3.2px; /* Smooth spacing for CR80 standard height */
+            font-size: 7.2px;
             font-weight: 500;
             color: #000;
         }
@@ -551,10 +534,10 @@
             font-weight: bold;
         }
 
-        /* Back Card Styling */
+        /* Back Card Styling (CR80 Standard Dimensions: 3.375in x 2.125in) */
         .id-card-back {
-            width: 324px;
-            height: 204px;
+            width: 3.375in !important;
+            height: 2.125in !important;
             border: 1px solid #ccc;
             border-radius: 10px;
             background: #fff;
@@ -672,25 +655,32 @@
             display: none;
         }
 
-        /* PRINT MEDIA LAYOUT */
+        /* PRINT MEDIA LAYOUT (Enforces exact physical CR80 Standard Scale: 3.375in x 2.125in) */
         @media print {
-            body * {
-                visibility: hidden;
+            @page {
+                size: A4;
+                margin: 0.8in 0.6in; /* Highly synchronized margins for centered side-by-side printing */
             }
 
-            #print-layout, #print-layout * {
-                visibility: visible;
+            /* Force pure white background for the entire document on print */
+            html, body {
+                background: #ffffff !important;
+                background-color: #ffffff !important;
             }
 
+            /* Highly reliable standard CSS print method to hide screen elements cleanly */
+            #screen-layout, #lock-screen, .modal, .global-settings-box {
+                display: none !important;
+            }
+
+            /* Display the print layout normally with solid white background */
             #print-layout {
                 display: block !important;
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 210mm; 
-                box-sizing: border-box;
-                background: #fff;
-                padding-top: 10mm;
+                background: #ffffff !important;
+                background-color: #ffffff !important;
+                margin: 0;
+                padding: 0;
+                width: 100%;
             }
 
             .print-pair-container {
@@ -702,8 +692,8 @@
             }
 
             .id-card, .id-card-back {
-                width: 85.6mm !important;
-                height: 54mm !important;
+                width: 3.375in !important;
+                height: 2.125in !important;
                 border: 1px solid #111 !important;
                 border-radius: 3mm !important;
                 box-shadow: none !important;
@@ -1530,7 +1520,6 @@
         previewContainer.innerHTML = `
             <!-- Front Part -->
             <div class="id-card">
-                <div class="card-wave"></div>
                 <div class="card-header">
                     <img class="card-logo" src="${globalLogoUrl}" alt="IU Logo">
                     <div class="card-header-text">
@@ -1630,7 +1619,6 @@
             pairContainer.innerHTML = `
                 <!-- Front Side -->
                 <div class="id-card">
-                    <div class="card-wave"></div>
                     <div class="card-header">
                         <img class="card-logo" src="${globalLogoUrl}" alt="IU Logo">
                         <div class="card-header-text">
