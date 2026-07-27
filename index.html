@@ -346,9 +346,9 @@
             outline: none;
         }
 
-        /* Front Card Styling (CR80 Standard Dimensions: 3.375in x 2.125in) */
+        /* Front Card Styling (CR80 Alternative Dimensions: 3.5in x 2.125in) */
         .id-card {
-            width: 3.375in !important;
+            width: 3.5in !important;
             height: 2.125in !important;
             border: 1px solid #ccc;
             border-radius: 10px;
@@ -524,7 +524,7 @@
         .card-info-grid {
             display: grid;
             grid-template-columns: 58px 6px 1fr;
-            row-gap: 3.2px; /* Smooth spacing for CR80 standard height */
+            row-gap: 3.2px; /* Smooth spacing for standard height */
             font-size: 7.2px;
             font-weight: 500;
             color: #000;
@@ -534,9 +534,9 @@
             font-weight: bold;
         }
 
-        /* Back Card Styling (CR80 Standard Dimensions: 3.375in x 2.125in) */
+        /* Back Card Styling (Alternative Dimensions: 3.5in x 2.125in) */
         .id-card-back {
-            width: 3.375in !important;
+            width: 3.5in !important;
             height: 2.125in !important;
             border: 1px solid #ccc;
             border-radius: 10px;
@@ -655,17 +655,11 @@
             display: none;
         }
 
-        /* PRINT MEDIA LAYOUT (Enforces exact physical CR80 Standard Scale: 3.375in x 2.125in) */
+        /* PRINT MEDIA LAYOUT (Enforces exact physical CR80 Alternative Scale: 3.5in x 2.125in) */
         @media print {
             @page {
                 size: A4;
-                margin: 0.8in 0.6in; /* Highly synchronized margins for centered side-by-side printing */
-            }
-
-            /* Force pure white background for the entire document on print */
-            html, body {
-                background: #ffffff !important;
-                background-color: #ffffff !important;
+                margin: 0.8in 0.4in; /* Adjusted margins to keep larger 3.5in wide cards perfectly centered without clipping */
             }
 
             /* Highly reliable standard CSS print method to hide screen elements cleanly */
@@ -692,7 +686,7 @@
             }
 
             .id-card, .id-card-back {
-                width: 3.375in !important;
+                width: 3.5in !important;
                 height: 2.125in !important;
                 border: 1px solid #111 !important;
                 border-radius: 3mm !important;
