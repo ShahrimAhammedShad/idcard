@@ -346,10 +346,14 @@
             outline: none;
         }
 
-        /* Front Card Styling (CR80 Alternative Dimensions: 3.5in x 2.125in) */
+        /* Front Card Styling (Locked exactly at 3.5in x 2.5in to prevent shrink blocks) */
         .id-card {
             width: 3.5in !important;
-            height: 2.125in !important;
+            min-width: 3.5in !important; /* Force browser to respect exact width bounds */
+            max-width: 3.5in !important;
+            height: 2.5in !important;
+            min-height: 2.5in !important; /* Force browser to respect exact height bounds */
+            max-height: 2.5in !important;
             border: 1px solid #ccc;
             border-radius: 10px;
             background: #ffffff;
@@ -443,8 +447,9 @@
             z-index: 2;
         }
 
+        /* Reduced photo column width slightly to optimize middle gap */
         .card-left {
-            width: 75px;
+            width: 70px; /* Reduced from 75px */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -505,7 +510,7 @@
 
         .card-right {
             flex: 1;
-            padding-left: 8px;
+            padding-left: 5px; /* Slightly reduced left padding to compress gap */
         }
 
         /* Improved Visibility and Contrast for Student Name Banner */
@@ -524,8 +529,8 @@
         .card-info-grid {
             display: grid;
             grid-template-columns: 58px 6px 1fr;
-            row-gap: 3.2px; /* Smooth spacing for standard height */
-            font-size: 7.2px;
+            row-gap: 5px; /* Smooth spacing for standard height */
+            font-size: 8px;
             font-weight: 500;
             color: #000;
         }
@@ -534,16 +539,20 @@
             font-weight: bold;
         }
 
-        /* Back Card Styling (Alternative Dimensions: 3.5in x 2.125in) */
+        /* Back Card Styling (Locked exactly at 3.5in x 2.5in to prevent shrink blocks) */
         .id-card-back {
             width: 3.5in !important;
-            height: 2.125in !important;
+            min-width: 3.5in !important;
+            max-width: 3.5in !important;
+            height: 2.5in !important;
+            min-height: 2.5in !important;
+            max-height: 2.5in !important;
             border: 1px solid #ccc;
             border-radius: 10px;
             background: #fff;
             position: relative;
             box-sizing: border-box;
-            padding: 12px 15px;
+            padding: 15px 15px; 
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -579,7 +588,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 8px 0;
+            padding: 10px 0;
         }
 
         .property-text {
@@ -655,11 +664,11 @@
             display: none;
         }
 
-        /* PRINT MEDIA LAYOUT (Enforces exact physical CR80 Alternative Scale: 3.5in x 2.125in) */
+        /* PRINT MEDIA LAYOUT (Enforces exact physical scale: 3.5in x 2.5in) */
         @media print {
             @page {
                 size: A4;
-                margin: 0.8in 0.4in; /* Adjusted margins to keep larger 3.5in wide cards perfectly centered without clipping */
+                margin: 0.8in 0.4in; /* Kept optimal centered side-by-side margins */
             }
 
             /* Highly reliable standard CSS print method to hide screen elements cleanly */
@@ -686,7 +695,11 @@
 
             .id-card, .id-card-back {
                 width: 3.5in !important;
-                height: 2.125in !important;
+                min-width: 3.5in !important;
+                max-width: 3.5in !important;
+                height: 2.5in !important;
+                min-height: 2.5in !important;
+                max-height: 2.5in !important;
                 border: 1px solid #111 !important;
                 border-radius: 3mm !important;
                 box-shadow: none !important;
@@ -739,10 +752,10 @@
                 padding: 0.8mm 0 !important; 
                 margin-bottom: 1.2mm !important; 
             }
-            .card-info-grid { font-size: 6.5pt !important; row-gap: 0.8mm !important; grid-template-columns: 18mm 2mm 1fr !important;}
+            .card-info-grid { font-size: 7pt !important; row-gap: 1.2mm !important; grid-template-columns: 18mm 2mm 1fr !important;}
 
             /* Back Card Adjustments */
-            .id-card-back { padding: 3mm 4mm !important; }
+            .id-card-back { padding: 4mm 5mm !important; }
             .back-top { padding-bottom: 1.5mm !important; }
             .back-top-logo { width: 6.5mm !important; height: 6.5mm !important; }
             .back-top-text { font-size: 7.5pt !important; padding-left: 2mm !important; }
